@@ -2,14 +2,10 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Copy package definition and code
-COPY package.json ./
-COPY db.js ./
-COPY schema.sql ./
-COPY server.js ./
-COPY public ./public
+# Copy all project files from repository
+COPY . .
 
-# Create data directory for persistent SQLite database volume
+# Ensure data directory exists for database
 RUN mkdir -p /app/data
 
 ENV NODE_ENV=production

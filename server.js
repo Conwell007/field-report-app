@@ -7,7 +7,9 @@ const { db, initDb } = require('./db.js');
 initDb();
 
 const PORT = process.env.PORT || 3000;
-const PUBLIC_DIR = path.join(__dirname, 'public');
+const PUBLIC_DIR = fs.existsSync(path.join(__dirname, 'public'))
+  ? path.join(__dirname, 'public')
+  : __dirname;
 
 // MIME types map
 const MIME_TYPES = {
