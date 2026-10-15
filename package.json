@@ -1,0 +1,15 @@
+{
+  "name": "daily-field-report-app",
+  "version": "1.0.0",
+  "description": "Database-driven Daily Site Report system with dropdowns, crew management, and PDF export",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "keywords": ["field-reports", "daily-site-report", "sqlite", "construction", "cabling"],
+  "author": "",
+  "license": "ISC"
+}

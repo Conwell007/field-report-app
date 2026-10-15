@@ -1,0 +1,27 @@
+# fly.toml app configuration file for webappz-design54-field-report-app
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+
+app = 'webappz-design54-field-report-app'
+primary_region = 'jnb'
+
+[env]
+  PORT = '3000'
+  NODE_ENV = 'production'
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+[mounts]
+  source = 'data_volume'
+  destination = '/app/data'
+  initial_size = '1gb'
