@@ -579,25 +579,30 @@ const server = http.createServer(async (req, res) => {
     }
 
     // -------------------------------------------------------------
-    // STATIC FILE SERVING
+    // STATIC FILE SERVING (Supports both public/ subfolder & root)
     // -------------------------------------------------------------
-    let filePath = path.join(PUBLIC_DIR, pathname === '/' ? 'index.html' : pathname);
+    const targetFile = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
+    let resolvedPath = null;
 
-    filePath = path.normalize(filePath);
-    if (!filePath.startsWith(PUBLIC_DIR)) {
-      res.writeHead(403, { 'Content-Type': 'text/plain' });
-      return res.end('Access Denied');
+    const inPublic = path.join(__dirname, 'public', targetFile);
+    const inRoot = path.join(__dirname, targetFile);
+
+    if (fs.existsSync(inPublic) && fs.statSync(inPublic).isFile()) {
+      resolvedPath = inPublic;
+    } else if (fs.existsSync(inRoot) && fs.statSync(inRoot).isFile()) {
+      resolvedPath = inRoot;
     }
 
-    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-      const ext = path.extname(filePath).toLowerCase();
+    if (resolvedPath) {
+      const ext = path.extname(resolvedPath).toLowerCase();
       const contentType = MIME_TYPES[ext] || 'application/octet-stream';
       res.writeHead(200, { 'Content-Type': contentType });
-      fs.createReadStream(filePath).pipe(res);
-    } else {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.end('Not Found');
+      fs.createReadStream(resolvedPath).pipe(res);
+      return;
     }
+
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Not Found');
   } catch (error) {
     console.error('Server error:', error);
     sendJson(res, 500, { error: 'Internal Server Error: ' + error.message });

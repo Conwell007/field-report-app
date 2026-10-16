@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Site Report - Field Reporting System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-icon">📋</div>
+      <div>
+        <h1>DAILY SITE REPORT</h1>
+        <p>Webappz Field Work & Operations Reporting</p>
+      </div>
+    </div>
+    <nav class="nav-tabs">
+      <button class="nav-btn active" id="tab-reports" onclick="switchView('reports-view')">
+        📁 Reports Archive
+      </button>
+      <button class="nav-btn" id="tab-form" onclick="createNewReport()">
+        ➕ New Report
+      </button>
+      <button class="nav-btn" id="tab-master" onclick="switchView('master-view')">
+        🗄️ Database Master Data
+      </button>
+    </nav>
+  </header>
+
+  <main class="container">
+
+    <!-- ========================================================
+         VIEW 1: REPORTS ARCHIVE & LIST
+         ======================================================== -->
+    <section id="reports-view" class="view-section active">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Daily Field Reports</div>
+            <p style="font-size: 0.85rem; color: #64748b;">Browse, print, edit, and manage all site reports.</p>
+          </div>
+          <button class="btn btn-primary" onclick="createNewReport()">
+            ➕ Create New Field Report
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="reports-table">
+            <thead>
+              <tr>
+                <th>Report #</th>
+                <th>Date</th>
+                <th>Project & Client</th>
+                <th>Location</th>
+                <th>Prepared By</th>
+                <th>Activities</th>
+                <th>Issues</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reports-list-body">
+              <tr>
+                <td colspan="8" style="text-align: center; padding: 24px; color: #64748b;">Loading reports...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         VIEW 2: REPORT FORM (CREATE / EDIT)
+         ======================================================== -->
+    <section id="form-view" class="view-section">
+      <form id="report-form" onsubmit="saveReport(event)">
+        <input type="hidden" id="report-id" value="">
+
+        <!-- Top Banner / Project Details -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title" id="form-heading">New Daily Site Report</div>
+              <p style="font-size: 0.85rem; color: #64748b;">Fill in site activities using saved database records.</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-secondary" onclick="switchView('reports-view')">Cancel</button>
+              <button type="button" class="btn btn-success" onclick="previewCurrentForm()">🖨️ Print / PDF Preview</button>
+              <button type="submit" class="btn btn-primary">💾 Save Report</button>
+            </div>
+          </div>
+
+          <div class="form-grid-3">
+            <!-- Project Picker & Auto-Discovery -->
+            <div class="form-group">
+              <label for="form-project">Project / Site <span style="color:red">*</span></label>
+              <div class="input-with-action">
+                <select id="form-project" class="form-control" required onchange="onProjectSelect()">
+                  <option value="">-- Select Project / Site --</option>
+                  <option value="__NEW__" style="color: #2563eb; font-weight: bold;">➕ Type / Add New Project...</option>
+                </select>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="openQuickModal('project')" title="Add New Project">➕</button>
+              </div>
+            </div>
+
+            <!-- Client (Can be chosen from datalist or auto-filled) -->
+            <div class="form-group">
+              <label for="form-client-display">Client</label>
+              <input type="text" id="form-client-display" list="clients-datalist" class="form-control" placeholder="Select or type new client..." oninput="onCustomClientInput()">
+              <datalist id="clients-datalist"></datalist>
+            </div>
+
+            <!-- Location / Address -->
+            <div class="form-group">
+              <label for="form-location-display">Location / Site Address</label>
+              <input type="text" id="form-location-display" class="form-control" placeholder="Select or type site location...">
+            </div>
+          </div>
+
+          <!-- Hidden inline fields shown when creating a new project directly in the form -->
+          <div id="new-project-inline-box" style="display: none; background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+            <div style="font-weight: 600; color: #1e40af; margin-bottom: 8px; font-size: 0.9rem;">
+              ✨ Adding New Project to Database (Will be saved automatically for future reports)
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>New Project Name *</label>
+                <input type="text" id="inline-project-name" class="form-control" placeholder="e.g. Westlands Office Complex">
+              </div>
+              <div class="form-group">
+                <label>Client Name</label>
+                <input type="text" id="inline-client-name" list="clients-datalist" class="form-control" placeholder="e.g. Knight Frank">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-grid-3">
+            <!-- Date -->
+            <div class="form-group">
+              <label for="form-date">Report Date <span style="color:red">*</span></label>
+              <input type="date" id="form-date" class="form-control" required>
+            </div>
+
+            <!-- Prepared By -->
+            <div class="form-group">
+              <label for="form-prepared-by">Prepared By <span style="color:red">*</span></label>
+              <div class="input-with-action">
+                <select id="form-prepared-by" class="form-control" required onchange="onPreparedByChange(this)">
+                  <option value="">-- Select Employee / Technician --</option>
+                  <option value="__NEW__" style="color: #2563eb; font-weight: bold;">➕ Add New Employee...</option>
+                </select>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="openQuickModal('employee')" title="Add New Employee">➕</button>
+              </div>
+            </div>
+
+            <!-- Weather -->
+            <div class="form-group">
+              <label>Weather & Temperature</label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <select id="form-weather" class="form-control" style="flex: 2;">
+                  <option value="Sunny ☀️">Sunny ☀️</option>
+                  <option value="Rainy 🌧️">Rainy 🌧️</option>
+                  <option value="Cloudy 🌥️">Cloudy 🌥️</option>
+                  <option value="Overcast ☁️">Overcast ☁️</option>
+                  <option value="Windy 💨">Windy 💨</option>
+                </select>
+                <div style="flex: 1; display: flex; align-items: center; gap: 4px;">
+                  <input type="text" id="form-temp" class="form-control" placeholder="Temp" style="width: 70px;">
+                  <span style="font-size: 0.85rem; font-weight: bold;">°C</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 1: Work Summary -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">1. Work Summary</div>
+              <p style="font-size: 0.85rem; color: #64748b;">Specify trades, job areas, descriptions, and assign crew members.</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addWorkSummaryRow()">➕ Add Activity Row</button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="editor-table" id="work-summary-table">
+              <thead>
+                <tr>
+                  <th style="width: 16%;">Activity / Trade</th>
+                  <th style="width: 14%;">Location / Area</th>
+                  <th style="width: 32%;">Description of Work Done</th>
+                  <th style="width: 22%;">Crew Assigned</th>
+                  <th style="width: 8%;">Time (Hrs)</th>
+                  <th style="width: 8%;">Status</th>
+                  <th style="width: 30px;"></th>
+                </tr>
+              </thead>
+              <tbody id="work-summary-tbody">
+                <!-- Dynamic Rows inserted here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section 2: Manpower Deployment -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">2. Manpower Deployment</div>
+              <p style="font-size: 0.85rem; color: #64748b;">Summary of team deployment, shift hours, and headcount.</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="autoGenerateManpower()">⚡ Auto-fill from Work Summary</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="addManpowerRow()">➕ Add Team Row</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="editor-table" id="manpower-table">
+              <thead>
+                <tr>
+                  <th style="width: 18%;">Team / Crew Name</th>
+                  <th style="width: 10%;">Headcount</th>
+                  <th style="width: 32%;">Trade / Task</th>
+                  <th style="width: 12%;">Start Time</th>
+                  <th style="width: 12%;">End Time</th>
+                  <th style="width: 16%;">Remarks</th>
+                  <th style="width: 30px;"></th>
+                </tr>
+              </thead>
+              <tbody id="manpower-tbody">
+                <!-- Dynamic Rows inserted here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section 5: Site Observations & Notes -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">5. Site Observations & Notes</div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="obs-progress">Progress vs Program</label>
+              <textarea id="obs-progress" class="form-control" rows="2" placeholder="e.g. Tasks are approaching completion steadily."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="obs-challenges">Challenges / Delays</label>
+              <textarea id="obs-challenges" class="form-control" rows="2" placeholder="e.g. None observed, or note material/access issues"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="obs-safety">Safety & Housekeeping</label>
+              <textarea id="obs-safety" class="form-control" rows="2" placeholder="e.g. All safety precautions followed, PPE worn, no incidents."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="obs-quality">Quality Observations</label>
+              <textarea id="obs-quality" class="form-control" rows="2" placeholder="e.g. Work carried out with the utmost focus on quality delivery."></textarea>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 12px;">
+            <label for="obs-other">Other Remarks</label>
+            <textarea id="obs-other" class="form-control" rows="2" placeholder="Any general comments or notifications..."></textarea>
+          </div>
+        </div>
+
+        <!-- Section 6: Attachments & Supporting Documents -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">6. Attachments & Supporting Documents</div>
+          </div>
+
+          <div class="checkbox-grid" id="attachments-container">
+            <label class="checkbox-label">
+              <input type="checkbox" value="Site Photos" name="attachments"> Site Photos
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" value="Delivery Notes" name="attachments"> Delivery Notes
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" value="Inspection Checklists" name="attachments"> Inspection Checklists
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" value="Test Reports / Cube Results" name="attachments"> Test Reports / Cube Results
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" value="NCRs / Observations" name="attachments"> NCRs / Observations
+            </label>
+          </div>
+        </div>
+
+        <!-- Section 7: Issues & Action Points -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">7. Issues & Action Points</div>
+              <p style="font-size: 0.85rem; color: #64748b;">Record site queries, punch lists, cabling issues, and responsible parties.</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addIssueRow()">➕ Add Issue Row</button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="editor-table" id="issues-table">
+              <thead>
+                <tr>
+                  <th style="width: 35%;">Issue / Observation</th>
+                  <th style="width: 30%;">Recommended Action</th>
+                  <th style="width: 15%;">Responsible</th>
+                  <th style="width: 10%;">Target Date</th>
+                  <th style="width: 10%;">Status</th>
+                  <th style="width: 30px;"></th>
+                </tr>
+              </thead>
+              <tbody id="issues-tbody">
+                <!-- Dynamic Rows inserted here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section 8: Sign-Off -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">8. Sign-Off</div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="editor-table" id="signoff-table">
+              <thead>
+                <tr>
+                  <th style="width: 30%;">Role / Position</th>
+                  <th style="width: 35%;">Assigned Name</th>
+                  <th style="width: 20%;">Signature / Confirmation</th>
+                  <th style="width: 15%;">Date</th>
+                </tr>
+              </thead>
+              <tbody id="signoff-tbody">
+                <tr>
+                  <td><strong>General Field Technician</strong><input type="hidden" class="sign-role" value="General Field Technician"></td>
+                  <td>
+                    <select class="form-control sign-name-select" onchange="syncSignature(this)">
+                      <option value="">-- Select Technician --</option>
+                    </select>
+                  </td>
+                  <td><input type="text" class="form-control sign-text" placeholder="Digital sign / Name"></td>
+                  <td><input type="date" class="form-control sign-date"></td>
+                </tr>
+                <tr>
+                  <td><strong>Project Engineer</strong><input type="hidden" class="sign-role" value="Project Engineer"></td>
+                  <td>
+                    <select class="form-control sign-name-select" onchange="syncSignature(this)">
+                      <option value="">-- Select Engineer --</option>
+                    </select>
+                  </td>
+                  <td><input type="text" class="form-control sign-text" placeholder="Digital sign / Name"></td>
+                  <td><input type="date" class="form-control sign-date"></td>
+                </tr>
+                <tr>
+                  <td><strong>Site Agent / PM</strong><input type="hidden" class="sign-role" value="Site Agent / PM"></td>
+                  <td>
+                    <select class="form-control sign-name-select" onchange="syncSignature(this)">
+                      <option value="">-- Select PM / Agent --</option>
+                    </select>
+                  </td>
+                  <td><input type="text" class="form-control sign-text" placeholder="Digital sign / Name"></td>
+                  <td><input type="date" class="form-control sign-date"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px; text-align: right; margin-bottom: 80px;">
+          <button type="submit" class="btn btn-primary" style="padding: 12px 28px; font-size: 1rem;">
+            💾 Save Daily Report
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ========================================================
+         VIEW 3: DATABASE MASTER DATA MANAGEMENT
+         ======================================================== -->
+    <section id="master-view" class="view-section">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Database Master Records</div>
+            <p style="font-size: 0.85rem; color: #64748b;">Manage your reusable Clients, Sites, Employees (Crew), and Work Categories.</p>
+          </div>
+        </div>
+
+        <!-- Master Tabs -->
+        <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px;">
+          <button class="btn btn-secondary active-master-tab" id="mtab-clients" onclick="showMasterTab('clients')">🏢 Clients</button>
+          <button class="btn btn-secondary" id="mtab-projects" onclick="showMasterTab('projects')">🏗️ Projects / Sites</button>
+          <button class="btn btn-secondary" id="mtab-employees" onclick="showMasterTab('employees')">👷 Employees & Crew</button>
+          <button class="btn btn-secondary" id="mtab-categories" onclick="showMasterTab('categories')">🏷️ Work Categories</button>
+        </div>
+
+        <!-- Master Content: Clients -->
+        <div id="mcontent-clients" class="master-pane">
+          <form onsubmit="handleMasterSubmit(event, 'clients')" style="background: #f8fafc; padding: 16px; border-radius: 6px; margin-bottom: 20px;">
+            <h4 style="margin-bottom: 12px;">Add New Client</h4>
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label>Client Name *</label>
+                <input type="text" id="m-client-name" class="form-control" required placeholder="e.g. Carol Wahome Projects">
+              </div>
+              <div class="form-group">
+                <label>Contact Person</label>
+                <input type="text" id="m-client-contact" class="form-control" placeholder="e.g. Carol Wahome">
+              </div>
+              <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" id="m-client-phone" class="form-control" placeholder="e.g. +254 700 000 000">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Add Client</button>
+          </form>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Client Name</th>
+                <th>Contact Person</th>
+                <th>Phone</th>
+              </tr>
+            </thead>
+            <tbody id="master-clients-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Master Content: Projects -->
+        <div id="mcontent-projects" class="master-pane" style="display: none;">
+          <form onsubmit="handleMasterSubmit(event, 'projects')" style="background: #f8fafc; padding: 16px; border-radius: 6px; margin-bottom: 20px;">
+            <h4 style="margin-bottom: 12px;">Add New Project / Site</h4>
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label>Client *</label>
+                <select id="m-project-client" class="form-control" required></select>
+              </div>
+              <div class="form-group">
+                <label>Project Name *</label>
+                <input type="text" id="m-project-name" class="form-control" required placeholder="e.g. Eagle Park Residence">
+              </div>
+              <div class="form-group">
+                <label>Location / Address *</label>
+                <input type="text" id="m-project-location" class="form-control" required placeholder="e.g. Eagle Park, Runda">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Add Project</button>
+          </form>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Project Name</th>
+                <th>Client</th>
+                <th>Location</th>
+              </tr>
+            </thead>
+            <tbody id="master-projects-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Master Content: Employees -->
+        <div id="mcontent-employees" class="master-pane" style="display: none;">
+          <form onsubmit="handleMasterSubmit(event, 'employees')" style="background: #f8fafc; padding: 16px; border-radius: 6px; margin-bottom: 20px;">
+            <h4 style="margin-bottom: 12px;">Add New Employee / Crew Member</h4>
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label>Full Name *</label>
+                <input type="text" id="m-emp-name" class="form-control" required placeholder="e.g. Samuel Amukoa">
+              </div>
+              <div class="form-group">
+                <label>Role / Trade</label>
+                <input type="text" id="m-emp-role" class="form-control" placeholder="e.g. Lead Electrician / General Field Tech">
+              </div>
+              <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" id="m-emp-phone" class="form-control" placeholder="e.g. +254 711 000 000">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Add Employee</button>
+          </form>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Full Name</th>
+                <th>Role / Trade</th>
+                <th>Phone</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="master-employees-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Master Content: Categories -->
+        <div id="mcontent-categories" class="master-pane" style="display: none;">
+          <form onsubmit="handleMasterSubmit(event, 'categories')" style="background: #f8fafc; padding: 16px; border-radius: 6px; margin-bottom: 20px;">
+            <h4 style="margin-bottom: 12px;">Add Work Category / Trade</h4>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Category / Trade Name *</label>
+                <input type="text" id="m-cat-name" class="form-control" required placeholder="e.g. Electrical fence, Networking, CCTV">
+              </div>
+              <div class="form-group">
+                <label>Description</label>
+                <input type="text" id="m-cat-desc" class="form-control" placeholder="Scope details...">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Add Category</button>
+          </form>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Category Name</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody id="master-categories-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         VIEW 4: PRINT / PDF PREVIEW CONTAINER
+         ======================================================== -->
+    <div id="print-view" class="print-container">
+      <div class="no-print" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; background: #e0f2fe; padding: 12px 16px; border-radius: 6px;">
+        <span><strong>Preview Mode:</strong> Ready to print or save to PDF</span>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="switchView('form-view')">✏️ Return to Editor</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        </div>
+      </div>
+
+      <!-- Exact document layout as specified by user -->
+      <div class="print-header">
+        <h1>DAILY SITE REPORT</h1>
+        <h2>WEBAPPZ FIELD REPORT</h2>
+      </div>
+
+      <!-- Project Details Table -->
+      <table class="print-meta-table">
+        <tr>
+          <td class="print-meta-label">Project:</td>
+          <td id="pv-project-client" style="width: 50%;"></td>
+          <td class="print-meta-label">Date:</td>
+          <td id="pv-date" style="width: 25%;"></td>
+        </tr>
+        <tr>
+          <td class="print-meta-label">Location:</td>
+          <td id="pv-location"></td>
+          <td class="print-meta-label">Prepared by:</td>
+          <td id="pv-prepared-by"></td>
+        </tr>
+        <tr>
+          <td class="print-meta-label">Weather:</td>
+          <td colspan="3" id="pv-weather"></td>
+        </tr>
+      </table>
+
+      <!-- 1. Work Summary -->
+      <div class="print-section-title">1. Work Summary</div>
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th style="width: 18%;">Activity / Trade</th>
+            <th style="width: 16%;">Location / Area</th>
+            <th style="width: 32%;">Description of Work Done</th>
+            <th style="width: 20%;">Crew</th>
+            <th style="width: 7%;">Time (Hrs)</th>
+            <th style="width: 7%;">Status</th>
+          </tr>
+        </thead>
+        <tbody id="pv-work-summary-body"></tbody>
+      </table>
+
+      <!-- 2. Manpower Deployment -->
+      <div class="print-section-title">2. Manpower Deployment</div>
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th style="width: 20%;">Team / Crew Name</th>
+            <th style="width: 12%;">No. of Persons</th>
+            <th style="width: 30%;">Trade / Task</th>
+            <th style="width: 10%;">Start Time</th>
+            <th style="width: 10%;">End Time</th>
+            <th style="width: 18%;">Remarks</th>
+          </tr>
+        </thead>
+        <tbody id="pv-manpower-body"></tbody>
+      </table>
+
+      <!-- 5. Site Observations & Notes -->
+      <div class="print-section-title">5. Site Observations & Notes</div>
+      <div class="print-notes-box">
+        <p><strong>Progress vs Program:</strong> <span id="pv-obs-progress"></span></p>
+        <p><strong>Challenges / Delays:</strong> <span id="pv-obs-challenges"></span></p>
+        <p><strong>Safety & Housekeeping:</strong> <span id="pv-obs-safety"></span></p>
+        <p><strong>Quality Observations:</strong> <span id="pv-obs-quality"></span></p>
+        <p><strong>Other Remarks:</strong> <span id="pv-obs-other"></span></p>
+      </div>
+
+      <!-- 6. Attachments & Supporting Documents -->
+      <div class="print-section-title">6. Attachments & Supporting Documents</div>
+      <div class="print-checkbox-row" id="pv-attachments"></div>
+
+      <!-- 7. Issues & Action Points -->
+      <div class="print-section-title">7. Issues & Action Points</div>
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th style="width: 45%;">Issue / Observation</th>
+            <th style="width: 35%;">Recommended Action</th>
+            <th style="width: 10%;">Responsible</th>
+            <th style="width: 10%;">Target Date</th>
+          </tr>
+        </thead>
+        <tbody id="pv-issues-body"></tbody>
+      </table>
+
+      <!-- 8. Sign-Off -->
+      <div class="print-section-title">8. Sign-Off</div>
+      <table class="print-signoff-table">
+        <thead>
+          <tr>
+            <th style="width: 35%;">Name & Position</th>
+            <th style="width: 35%;">Signature</th>
+            <th style="width: 30%;">Date</th>
+          </tr>
+        </thead>
+        <tbody id="pv-signoffs-body"></tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <!-- Quick Add Modal -->
+  <div class="modal-overlay" id="quick-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title" id="quick-modal-title">Quick Add</div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeQuickModal()">✕</button>
+      </div>
+      <form id="quick-modal-form" onsubmit="handleQuickModalSubmit(event)">
+        <div class="modal-body" id="quick-modal-body"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeQuickModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save to Database</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
